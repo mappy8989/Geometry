@@ -14,13 +14,6 @@
 namespace geometry {
 
 /*
- * В коде везде используется DummyClass. Ваша задача - выбрать наиболее подходящий тип для решения задачи
- */
-struct DummyClass {
-    DummyClass(std::vector<Shape>) {}
-};
-
-/*
  * Добавьте к методам класса Point2D и Lines2DDyn все необходимые аттрибуты и спецификаторы
  * Важно: Возвращаемый тип и принимаемые аргументы менять не нужно
  */
@@ -83,9 +76,17 @@ struct BoundingBox {
     /* ваш код здесь */
 };
 
+struct XY {
+    std::vector<double> x;
+    std::vector<double> y;
+};
+
 struct Line {
     Point2D start, end;
 
+    double Length(void) { return start.DistanceTo(end); }
+
+    XY Lines() const { return {{start.x, end.x}, {start.y, end.y}}; }
     /* ваш код здесь */
 };
 
@@ -151,6 +152,13 @@ private:
 };
 
 using Shape = std::variant<Line, Triangle, Rectangle, RegularPolygon, Circle, Polygon>;
+
+/*
+ * В коде везде используется DummyClass. Ваша задача - выбрать наиболее подходящий тип для решения задачи
+ */
+struct DummyClass {
+    DummyClass(std::vector<Shape>) {}
+};
 
 enum class GeometryError { Unsupported, NoIntersection, InvalidInput, DegenrateCase, InsufficientPoints };
 
@@ -245,11 +253,11 @@ struct std::formatter<geometry::Polygon> {
     template <typename FormatContext>
     auto format(const geometry::Polygon &poly, FormatContext &ctx) {
         auto out = ctx.out();
-        out = std::format_to(out, "Polygon[{} points]: [", poly.Vertices().size());
+        /*   out = std::format_to(out, "Polygon[{} points]: [", poly.Vertices().size());
 
-        for (const auto &p : poly.Vertices()) {
-            out = std::format_to(out, "{} ", p);
-        }
+           for (const auto &p : poly.Vertices()) {
+               out = std::format_to(out, "{} ", p);
+           }*/
 
         return std::format_to(out, "]");
     }
