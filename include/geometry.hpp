@@ -76,29 +76,35 @@ struct BoundingBox {
     /* ваш код здесь */
 };
 
-struct XY {
-    std::vector<double> x;
-    std::vector<double> y;
-};
-
 struct Line {
     Point2D start, end;
 
     double Length(void) { return start.DistanceTo(end); }
+    Point2D Center(void) { return {(end.x + start.x) / 2, (end.y + start.y) / 2}; }
 
-    XY Lines() const { return {{start.x, end.x}, {start.y, end.y}}; }
+    Lines2D<2> Lines() const { return {{start.x, end.x}, {start.y, end.y}}; }
     /* ваш код здесь */
 };
 
 struct Triangle {
     Point2D a, b, c;
 
+    Point2D Center(void) { return {(a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3}; }
+
+    Lines2D<3> Lines() const { return {{a.x, b.x, c.x}, {a.y, b.y, c.y}}; }
     /* ваш код здесь */
 };
 
 struct Rectangle {
     Point2D bottom_left;
     double width, height;
+
+    Point2D Center(void) { return {bottom_left.x + (width / 2), bottom_left.y + (height / 2)}; }
+
+    Lines2D<4> Lines() const {
+        return {{bottom_left.x, bottom_left.x, bottom_left.x + width, bottom_left.x + width},
+                {bottom_left.y, bottom_left.y + height, bottom_left.y + height, bottom_left.y}};
+    }
 
     /* ваш код здесь */
 };
@@ -121,6 +127,20 @@ struct RegularPolygon {
         }
         return points;
     }
+
+    Point2D Center(void) { return center_p; }
+
+    Lines2DDyn Lines() const {
+        Lines2DDyn lines;
+        lines.Reserve(sides);
+
+        for (int i = 0; i < sides; i++) {
+            const double angle = 2 * std::numbers::pi * i / sides;
+            lines.PushBack(center_p.x + radius * std::cos(angle), center_p.y + radius * std::sin(angle));
+        }
+
+        return lines;
+    }
 };
 
 struct Circle {
@@ -138,13 +158,42 @@ struct Circle {
     //
     // Должны быть сделана по аналогии с RegularPolygon::Vertices
     //
-    std::vector<Point2D> Vertices(size_t N = 30) { return {}; }
-    Lines2DDyn Lines(size_t N = 100) { return {}; }
+    std::vector<Point2D> Vertices(size_t N = 30) {
+        std::vector<Point2D> points;
+        points.reserve(N);
+
+        for (int i = 0; i < (int)N; ++i) {
+            const double angle = 2 * std::numbers::pi * i / N;
+            points.emplace_back(center_p.x + radius * std::cos(angle), center_p.y + radius * std::sin(angle));
+        }
+        return points;
+    }
+    Lines2DDyn Lines(size_t N = 100) const {
+        Lines2DDyn lines;
+        lines.Reserve(N);
+
+        for (int i = 0; i < (int)N; i++) {
+            const double angle = 2 * std::numbers::pi * i / N;
+            lines.PushBack(center_p.x + radius * std::cos(angle), center_p.y + radius * std::sin(angle));
+        }
+
+        return lines;
+    }
 };
 
 class Polygon {
 public:
     /* ваш код здесь */
+    Polygon(std::vector<Point2D> points) : points_(std::move(points)) {}
+
+    Lines2DDyn Lines(void) const {
+        Lines2DDyn lines;
+        lines.Reserve(points_.size());
+        for (const auto &point : points_) {
+            lines.PushBack(point);
+        }
+        return lines;
+    }
 
 private:
     std::vector<Point2D> points_;
