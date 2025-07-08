@@ -5,6 +5,7 @@
 #include <expected>
 #include <format>
 #include <numbers>
+#include <numeric>
 #include <optional>
 #include <print>
 #include <ranges>
@@ -186,6 +187,17 @@ public:
     /* ваш код здесь */
     Polygon(std::vector<Point2D> points) : points_(std::move(points)) {}
 
+    Point2D Center(void) const {
+        return {std::accumulate(points_.begin(), points_.end(), 0.0,
+                                [](double val, const auto &elem) { return val + elem.x; }) /
+                    points_.size(),
+                std::accumulate(points_.begin(), points_.end(), 0.0, [](double val, const auto &elem) {
+                    return val + elem.y;
+                }) / points_.size()};
+    }
+
+    const std::vector<Point2D> &Vertices() const { return points_; }
+
     Lines2DDyn Lines(void) const {
         Lines2DDyn lines;
         lines.Reserve(points_.size());
@@ -221,7 +233,7 @@ struct std::formatter<geometry::Point2D> {
     constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const geometry::Point2D &p, FormatContext &ctx) {
+    auto format(const geometry::Point2D &p, FormatContext &ctx) const {
         return format_to(ctx.out(), "({:.2f}, {:.2f})", p.x, p.y);
     }
 };
@@ -239,9 +251,21 @@ struct std::formatter<std::vector<geometry::Point2D>> {
 
     template <typename FormatContext>
     auto format(const std::vector<geometry::Point2D> &v, FormatContext &ctx) {
+        auto out = ctx.out();
+        out = std::format_to(out, "[");  // opening bracket
 
-        /* ваш код здесь */
-        return ctx.out();
+        bool first = true;
+        for (const auto &elem : v) {
+            if (!first) {
+                out = std::format_to(out, ", ");
+            }
+            first = false;
+            // Format each element using its own formatter
+            out = std::format_to(out, "{}", elem);
+        }
+
+        out = std::format_to(out, "]");  // closing bracket
+        return out;
     }
 };
 
@@ -302,11 +326,11 @@ struct std::formatter<geometry::Polygon> {
     template <typename FormatContext>
     auto format(const geometry::Polygon &poly, FormatContext &ctx) {
         auto out = ctx.out();
-        /*   out = std::format_to(out, "Polygon[{} points]: [", poly.Vertices().size());
+        out = std::format_to(out, "Polygon[{} points]: [", poly.Vertices().size());
 
-           for (const auto &p : poly.Vertices()) {
-               out = std::format_to(out, "{} ", p);
-           }*/
+        for (const auto &p : poly.Vertices()) {
+            out = std::format_to(out, "{} ", p);
+        }
 
         return std::format_to(out, "]");
     }
