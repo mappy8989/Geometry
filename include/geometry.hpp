@@ -81,10 +81,10 @@ struct Line {
     Point2D start, end;
 
     double Length(void) { return start.DistanceTo(end); }
-    Point2D Center(void) { return {(end.x + start.x) / 2, (end.y + start.y) / 2}; }
+    Point2D Center(void) const { return {(end.x + start.x) / 2, (end.y + start.y) / 2}; }
 
     Lines2D<2> Lines() const { return {{start.x, end.x}, {start.y, end.y}}; }
-    /* ваш код здесь */
+    double Height() const { return std::max(start.y, end.y); }
 };
 
 struct Triangle {
@@ -93,7 +93,7 @@ struct Triangle {
     Point2D Center(void) { return {(a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3}; }
 
     Lines2D<3> Lines() const { return {{a.x, b.x, c.x}, {a.y, b.y, c.y}}; }
-    /* ваш код здесь */
+    double Height() const { return std::max(a.y, std::max(b.y, c.y)); }
 };
 
 struct Rectangle {
@@ -107,7 +107,7 @@ struct Rectangle {
                 {bottom_left.y, bottom_left.y + height, bottom_left.y + height, bottom_left.y}};
     }
 
-    /* ваш код здесь */
+    double Height() const { return (bottom_left.y + height); }
 };
 
 struct RegularPolygon {
@@ -118,7 +118,7 @@ struct RegularPolygon {
     constexpr RegularPolygon(Point2D center, double radius, int sides)
         : center_p(center), radius(radius), sides(sides) {}
 
-    std::vector<Point2D> Vertices() {
+    std::vector<Point2D> Vertices() const {
         std::vector<Point2D> points;
         points.reserve(sides);
 
@@ -142,6 +142,13 @@ struct RegularPolygon {
 
         return lines;
     }
+
+    double Height() const {
+        auto points = Vertices();
+        auto max = std::ranges::max_element(points, {}, &Point2D::y);
+
+        return max->y;
+    }
 };
 
 struct Circle {
@@ -153,8 +160,8 @@ struct Circle {
     BoundingBox BoundBox() {
         return {center_p.x - radius, center_p.y - radius, center_p.x + radius, center_p.y + radius};
     }
-    double Height() { return center_p.y + radius; }
-    Point2D Center() { return center_p; }
+    double Height() const { return center_p.y + radius; }
+    Point2D Center() const { return center_p; }
 
     //
     // Должны быть сделана по аналогии с RegularPolygon::Vertices
@@ -205,6 +212,11 @@ public:
             lines.PushBack(point);
         }
         return lines;
+    }
+
+    double Height() const {
+        auto max = std::ranges::max_element(points_, {}, &Point2D::y);
+        return max->y;
     }
 
 private:

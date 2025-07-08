@@ -57,7 +57,7 @@ inline BoundingBox GetBoundBox(const Shape &shape) {
 inline double GetHeight(const Shape &shape) {
 
     /* ваш код здесь */
-    return 0.0;
+    return std::visit([](const auto &s) { return s.Height(); }, shape);
 }
 
 inline bool BoundingBoxesOverlap(const Shape &shape1, const Shape &shape2) {

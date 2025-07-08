@@ -23,7 +23,7 @@ public:
 
     auto GetIntersections(Value &figure1, Value &figure2) {
         std::visit(
-            Multilambda{
+            geometry::queries::Multilambda{
                 [&](geometry::Line &line1, geometry::Line &line2) { return IsLinesIntersect(line1, line2); },
                 [&](geometry::Line &line, geometry::Circle &circle) { return IsLineAndCircleIntersect(line, circle); },
                 [&](geometry::Circle &circle1, geometry::Circle &circle2) {
@@ -39,11 +39,6 @@ public:
     }
 
 private:
-    template <class... Ts>
-    struct Multilambda : Ts... {
-        using Ts::operator()...;
-    };
-
     bool IsLineAndCircleIntersect(geometry::Line &line, geometry::Circle &circle) {
         double dx = line.end.x - line.start.x;
         double dy = line.end.y - line.start.y;
