@@ -29,16 +29,16 @@ struct Point2D {
     bool operator==(const Point2D &other) { return x == other.x && y == other.y; }
 
     // Binary math operators
-    Point2D operator+(const Point2D &other) { return {x + other.x, y + other.y}; }
-    Point2D operator-(const Point2D &other) { return {x - other.x, y - other.y}; }
+    Point2D operator+(const Point2D &other) const { return {x + other.x, y + other.y}; }
+    Point2D operator-(const Point2D &other) const { return {x - other.x, y - other.y}; }
     Point2D operator*(double value) { return {x * value, y * value}; }
     Point2D operator/(double value) { return {x / value, y / value}; }
 
     // Binary geometry operations
     double Dot(const Point2D &other) { return x * other.x + y * other.y; }
     double Cross(const Point2D &other) { return x * other.y - y * other.x; }
-    double Length() { return std::sqrt(x * x + y * y); }
-    double DistanceTo(const Point2D &other) { return (*this - other).Length(); }
+    double Length() const { return std::sqrt(x * x + y * y); }
+    double DistanceTo(const Point2D &other) const { return (*this - other).Length(); }
 
     Point2D Normalize() {
         const double len = Length();
@@ -80,7 +80,7 @@ struct BoundingBox {
 struct Line {
     Point2D start, end;
 
-    double Length(void) { return start.DistanceTo(end); }
+    double Length(void) const { return start.DistanceTo(end); }
     Point2D Center(void) const { return {(end.x + start.x) / 2, (end.y + start.y) / 2}; }
 
     Lines2D<2> Lines() const { return {{start.x, end.x}, {start.y, end.y}}; }
@@ -285,7 +285,8 @@ using Shape = std::variant<Line, Triangle, Rectangle, RegularPolygon, Circle, Po
  * В коде везде используется DummyClass. Ваша задача - выбрать наиболее подходящий тип для решения задачи
  */
 struct DummyClass {
-    DummyClass(std::vector<Shape>) {}
+    DummyClass(std::vector<Shape> shapes) : shapes_(std::move(shapes)) {}
+    std::vector<Shape> shapes_;
 };
 
 enum class GeometryError { Unsupported, NoIntersection, InvalidInput, DegenrateCase, InsufficientPoints };

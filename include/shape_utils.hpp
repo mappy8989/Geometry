@@ -1,6 +1,7 @@
 #pragma once
 #include "geometry.hpp"
 #include "queries.hpp"
+#include <algorithm>
 #include <print>
 #include <random>
 #include <ranges>
@@ -85,7 +86,13 @@ std::optional<size_t> FindHighestShape(DummyClass shapes) {
      * Важно: использование ручной итерации по фигурам не разрешается
      */
 
-    return std::nullopt;
+    auto get_height = [](const Shape &shape) { return std::visit([&](const auto &el) { return el.Height(); }, shape); };
+    auto res = std::ranges::max_element(shapes.shapes_, {}, get_height);
+    if (res == shapes.shapes_.end()) {
+        return std::nullopt;
+    }
+
+    return get_height(*res);
 }
 
 }  // namespace geometry::utils
