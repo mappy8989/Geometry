@@ -2,6 +2,7 @@
 #include "geometry.hpp"
 #include <algorithm>
 #include <optional>
+#include <stdexcept>
 #include <variant>
 
 namespace geometry::queries {
@@ -43,15 +44,26 @@ struct ShapeToShapeDistanceVisitor {
  * Функции-помощники
  */
 inline double DistanceToPoint(const Shape &shape, const Point2D &point) {
+    auto dist = [](const Point2D &a, const Point2D &b) {
+        return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
+    };
 
+    auto res = std::visit(Multilambda{[](const Line &line) { return 0.0; },
+                                      [](const auto &fig) {
+                                          throw std::runtime_error("Unrecognised figure");
+                                          return 0.0;
+                                      }
+
+                          }
+
+                          ,
+                          shape);
     /* ваш код здесь */
-    return 0.0;
+    return res;
 }
 
 inline BoundingBox GetBoundBox(const Shape &shape) {
-
-    /* ваш код здесь */
-    return {};
+    return std::visit([](const auto &s) { return s.BoundBox(); }, shape);
 }
 
 inline double GetHeight(const Shape &shape) {

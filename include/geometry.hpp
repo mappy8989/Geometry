@@ -85,6 +85,10 @@ struct Line {
 
     Lines2D<2> Lines() const { return {{start.x, end.x}, {start.y, end.y}}; }
     double Height() const { return std::max(start.y, end.y); }
+
+    BoundingBox BoundBox() const {
+        return {std::min(start.x, end.x), std::min(start.y, end.y), std::max(start.x, end.x), std::max(start.y, end.y)};
+    }
 };
 
 struct Triangle {
@@ -94,6 +98,11 @@ struct Triangle {
 
     Lines2D<3> Lines() const { return {{a.x, b.x, c.x}, {a.y, b.y, c.y}}; }
     double Height() const { return std::max(a.y, std::max(b.y, c.y)); }
+
+    BoundingBox BoundBox() const {
+        return {std::min(a.x, std::min(b.x, c.x)), std::min(a.y, std::min(b.y, c.y)), std::max(a.x, std::max(b.x, c.x)),
+                std::max(a.y, std::max(b.y, c.y))};
+    }
 };
 
 struct Rectangle {
@@ -108,6 +117,10 @@ struct Rectangle {
     }
 
     double Height() const { return (bottom_left.y + height); }
+
+    BoundingBox BoundBox() const {
+        return {bottom_left.x, bottom_left.y, bottom_left.x + width, bottom_left.y + height};
+    }
 };
 
 struct RegularPolygon {
@@ -149,6 +162,28 @@ struct RegularPolygon {
 
         return max->y;
     }
+
+    BoundingBox BoundBox() const {
+        auto vertices = Vertices();
+
+        double min_x = 0;
+        double min_y = 0;
+        double max_x = 0;
+        double max_y = 0;
+        std::ranges::for_each(vertices, [&](auto &point) {
+            if (max_x < point.x)
+                max_x = point.x;
+            else if (min_x > point.x)
+                min_x = point.x;
+
+            if (max_y < point.y)
+                max_y = point.y;
+            else if (min_y > point.y)
+                min_y = point.y;
+        });
+
+        return {min_x, min_y, max_x, max_y};
+    }
 };
 
 struct Circle {
@@ -157,7 +192,7 @@ struct Circle {
 
     constexpr Circle(Point2D center, double radius) : center_p(center), radius(radius) {}
 
-    BoundingBox BoundBox() {
+    BoundingBox BoundBox() const {
         return {center_p.x - radius, center_p.y - radius, center_p.x + radius, center_p.y + radius};
     }
     double Height() const { return center_p.y + radius; }
@@ -219,9 +254,29 @@ public:
         return max->y;
     }
 
+    BoundingBox BoundBox() const {
+
+        double min_x = 0;
+        double min_y = 0;
+        double max_x = 0;
+        double max_y = 0;
+        std::ranges::for_each(points_, [&](auto &point) {
+            if (max_x < point.x)
+                max_x = point.x;
+            else if (min_x > point.x)
+                min_x = point.x;
+
+            if (max_y < point.y)
+                max_y = point.y;
+            else if (min_y > point.y)
+                min_y = point.y;
+        });
+
+        return {min_x, min_y, max_x, max_y};
+    }
+
 private:
     std::vector<Point2D> points_;
-    BoundingBox bounding_box_;
 };
 
 using Shape = std::variant<Line, Triangle, Rectangle, RegularPolygon, Circle, Polygon>;
