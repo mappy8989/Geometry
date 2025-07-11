@@ -2,10 +2,14 @@
 #include "geometry.hpp"
 #include "queries.hpp"
 #include <algorithm>
+#include <iterator>
 #include <print>
 #include <random>
+#include <range/v3/view/cartesian_product.hpp>
+#include <range/v3/view/filter.hpp>
 #include <ranges>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace geometry::utils {
@@ -64,21 +68,27 @@ private:
     std::uniform_int_distribution<int> type_dist;
 };
 
-std::vector<std::pair<Shape, Shape>> FindAllCollisions(DummyClass shapes) {
-    std::vector<std::pair<Shape, Shape>> collisions;
+inline std::vector<std::optional<std::pair<Point2D, Point2D>>> FindAllCollisions(DummyClass shapes) {
+    std::vector<std::pair<int, Shape>> enum_shapes;
+    enum_shapes.reserve(shapes.shapes_.size());
+    std::ranges::transform(shapes.shapes_ | std::views::enumerate, std::back_inserter(enum_shapes), [](auto &&pair) {
+        auto [idx, shape] = pair;
+        return std::make_pair(idx, shape);
+    });
 
-    /*
-     * Используйте библиотеку ranges, чтобы найти все коллизии между фигурами
-     *
-     * Важно: использование ручной итерации по фигурам не разрешается
-     *
-     * Также используйте наиболее эффективный метод добавления объектов в collisions
-     */
-
-    return collisions;
+    return std::ranges::views::cartesian_product(enum_shapes, enum_shapes) |
+           std::ranges::views::filter([](auto &&pair) {
+               auto &[x, y] = pair;
+               return x.first < y.first;
+           }) |
+           std::views::transform([](auto &&tuple) {
+               auto &[shape1, shape2] = tuple;
+               return geometry::queries::BoundingBoxesOverlap(shape1.second, shape2.second);
+           }) |
+           std::ranges::to<std::vector>();
 }
 
-std::optional<size_t> FindHighestShape(DummyClass shapes) {
+inline std::optional<size_t> FindHighestShape(DummyClass shapes) {
 
     /*
      * Используйте библиотеку ranges, чтобы найти самую высокую фигуру

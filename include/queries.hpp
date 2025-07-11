@@ -4,6 +4,7 @@
 #include <optional>
 #include <ranges>
 #include <stdexcept>
+#include <utility>
 #include <variant>
 
 namespace geometry::queries {
@@ -167,10 +168,20 @@ inline double GetHeight(const Shape &shape) {
     return std::visit([](const auto &s) { return s.Height(); }, shape);
 }
 
-inline bool BoundingBoxesOverlap(const Shape &shape1, const Shape &shape2) {
+inline std::optional<std::pair<Point2D, Point2D>> BoundingBoxesOverlap(const Shape &shape1, const Shape &shape2) {
+    BoundingBox Bbox1 = GetBoundBox(shape1);
+    BoundingBox Bbox2 = GetBoundBox(shape2);
 
+    double x_left = std::max(Bbox1.min_x, Bbox2.min_x);
+    double y_bottom = std::max(Bbox1.min_y, Bbox2.min_y);
+    double x_right = std::min(Bbox1.max_x, Bbox2.max_x);
+    double y_top = std::min(Bbox1.max_y, Bbox2.max_y);
     /* ваш код здесь */
-    return false;
+    if (x_left < x_right && y_bottom < y_top) {
+        return {std::make_pair(Point2D{x_left, y_bottom}, Point2D{x_right, y_top})};
+    }
+
+    return std::nullopt;
 }
 
 std::optional<double> DistanceBetweenShapes(const Shape &shape1, const Shape &shape2) { return std::nullopt; }
