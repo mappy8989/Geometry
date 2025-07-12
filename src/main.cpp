@@ -18,6 +18,18 @@ namespace views = std::ranges::views;
 void PrintAllIntersections(const Shape &shape, DummyClass others) {
     std::println("\n=== Intersections ===");
 
+    if (std::holds_alternative<geometry::Line>(shape) || std::holds_alternative<geometry::Circle>(shape)) {
+        return;
+    }
+
+    geometry::intersections::IntersectionVisitor intersectVisitor;
+    auto res =
+        others.shapes_ | std::views::filter([](auto &shape) {
+            return std::holds_alternative<geometry::Line>(shape) || std::holds_alternative<geometry::Circle>(shape);
+        }) |
+        std::views::transform([&](auto &elem) { return intersectVisitor.GetIntersections(shape, elem); }) |
+        std::ranges::for_each([](auto &res) { std::cout << res << "\n"; });
+
     /*
      * Используйте ranges чтобы оставить только фигуры,
      * поддерживающие возможность находить пересечения между собой
@@ -30,7 +42,7 @@ void PrintAllIntersections(const Shape &shape, DummyClass others) {
 
 void PrintDistancesFromPointToShapes(Point2D p, DummyClass shapes) {
     std::println("\n=== Distance from Point Test ===");
-    std::println("Testing point: {} ", p);
+    std::println("Testing point: {:} ", p);
 
     /*
      * Используйте ranges чтобы выбрать любые 5 фигур из списка.
