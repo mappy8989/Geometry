@@ -17,19 +17,23 @@ namespace views = std::ranges::views;
 
 void PrintAllIntersections(const Shape &shape, DummyClass others) {
     std::println("\n=== Intersections ===");
-
     if (std::holds_alternative<geometry::Line>(shape) || std::holds_alternative<geometry::Circle>(shape)) {
         return;
     }
-
     geometry::intersections::IntersectionVisitor intersectVisitor;
-    auto res =
-        others.shapes_ | std::views::filter([](auto &shape) {
-            return std::holds_alternative<geometry::Line>(shape) || std::holds_alternative<geometry::Circle>(shape);
-        }) |
-        std::views::transform([&](auto &elem) { return intersectVisitor.GetIntersections(shape, elem); }) |
-        std::ranges::for_each([](auto &res) { std::cout << res << "\n"; });
 
+    auto get_name = [](const Shape &shape) { return std::visit([](auto &elem) { return elem.GetName(); }, shape); };
+    const std::string_view shape_name = get_name(shape);
+
+    others.shapes_ | std::views::filter([](const auto &shape) {
+        return std::holds_alternative<geometry::Line>(shape) || std::holds_alternative<geometry::Circle>(shape);
+    }) | std::views::transform([&](auto &&elem) {
+        bool is_intersect = intersectVisitor.GetIntersections(shape, elem);
+        if (std::holds_alternative<geometry::Line>(elem)) {
+        }
+        std::println("{} {} {}", shape_name, get_name(elem), is_intersect ? " intersects" : " not intersect");
+        return is_intersect;
+    });
     /*
      * Используйте ranges чтобы оставить только фигуры,
      * поддерживающие возможность находить пересечения между собой
@@ -44,6 +48,18 @@ void PrintDistancesFromPointToShapes(Point2D p, DummyClass shapes) {
     std::println("\n=== Distance from Point Test ===");
     std::println("Testing point: {:} ", p);
 
+    if (shapes.shapes_.size() < 5) {
+        return;
+    }
+
+    auto get_name = [](const Shape &shape) { return std::visit([](auto &elem) { return elem.GetName(); }, shape); };
+
+    auto first_shapes = shapes.shapes_ | std::views::take(5);
+    std::ranges::for_each(first_shapes, [&](auto &&elem) {
+        std::println("Distance from point P to the center of {} is {}", get_name(elem),
+                     geometry::queries::PointToShapeDistanceVisitor{}(p, elem));
+    });
+
     /*
      * Используйте ranges чтобы выбрать любые 5 фигур из списка.
      * Затем найдите расстояния от заданной точки до всех выбранных фигур.
@@ -53,7 +69,25 @@ void PrintDistancesFromPointToShapes(Point2D p, DummyClass shapes) {
 
 void PerformShapeAnalysis(DummyClass shapes) {
     std::println("\n=== Shape Analysis ===");
+    auto collisions = geometry::utils::FindAllCollisions(shapes);
 
+    std::ranges::for_each(collisions, [](auto &&box) {
+        if (box.has_value()) {
+            std::println("{} {}", box.value().first, box.value().second);
+        }
+    });
+
+    std::println("Max heigth is {}", geometry::utils::FindHighestShape(shapes));
+    auto distances = geometry::queries::GetDistancesBetweenShapes(shapes);
+
+    std::println("Distances:");
+    std::ranges::for_each(distances, [](const auto &elem) {
+        if (elem.has_value()) {
+            std::println("Distance = {}", *elem);
+        } else {
+            std::println("Unsupported figures");
+        }
+    });
     /*
      * Используйте ranges и созданные классы чтобы:
      *     - Найти все пересечения между фигурами используя метод Bounding Box

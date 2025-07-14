@@ -19,9 +19,7 @@ namespace geometry::intersections {
  */
 class IntersectionVisitor {
 public:
-    using Value = std::variant<geometry::Line, geometry::Circle>;
-
-    auto GetIntersections(Value &figure1, Value &figure2) {
+    auto GetIntersections(const Shape &figure1, const Shape &figure2) {
         std::visit(
             geometry::queries::Multilambda{
                 [&](geometry::Line &line1, geometry::Line &line2) { return IsLinesIntersect(line1, line2); },
@@ -36,6 +34,8 @@ public:
                     return false;
                 }},
             figure1, figure2);
+
+        return false;
     }
 
 private:

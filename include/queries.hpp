@@ -150,10 +150,7 @@ inline double DistanceToPoint(const Shape &shape, const Point2D &point) {
  * Требуется организовать возможность нахождения расстояния для всех возможных фигур типа-суммы Shape
  */
 struct PointToShapeDistanceVisitor {
-    Point2D point;
-
-    explicit PointToShapeDistanceVisitor(const Point2D &p) : point(p) {}
-    double operator()(const Shape &shape) { return DistanceToPoint(shape, point); }
+    double operator()(const Point2D &p, const Shape &shape) { return DistanceToPoint(shape, p); }
 
     /* ваш код здесь */
 };
@@ -184,6 +181,35 @@ inline std::optional<std::pair<Point2D, Point2D>> BoundingBoxesOverlap(const Sha
     return std::nullopt;
 }
 
-std::optional<double> DistanceBetweenShapes(const Shape &shape1, const Shape &shape2) { return std::nullopt; }
+std::optional<double> DistanceBetweenShapes(const Shape &shape1, const Shape &shape2) {
+    double distance = 0.0;
+    try {
+        distance = ShapeToShapeDistanceVisitor{}(shape1, shape2);
+    } catch (...) {
+        return std::nullopt;
+    }
+
+    return distance;
+}
+
+std::vector<std::optional<double>> GetDistancesBetweenShapes(DummyClass shapes) {
+    std::vector<std::pair<int, Shape>> enum_shapes;
+    enum_shapes.reserve(shapes.shapes_.size());
+    std::ranges::transform(shapes.shapes_ | std::views::enumerate, std::back_inserter(enum_shapes), [](auto &&pair) {
+        auto [idx, shape] = pair;
+        return std::make_pair(idx, shape);
+    });
+
+    return std::ranges::views::cartesian_product(enum_shapes, enum_shapes) |
+           std::ranges::views::filter([](auto &&pair) {
+               auto &[x, y] = pair;
+               return x.first < y.first;
+           }) |
+           std::views::transform([](auto &&tuple) {
+               auto &[shape1, shape2] = tuple;
+               return geometry::queries::DistanceBetweenShapes(shape1.second, shape2.second);
+           }) |
+           std::ranges::to<std::vector>();
+}
 
 }  // namespace geometry::queries

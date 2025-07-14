@@ -79,6 +79,7 @@ struct BoundingBox {
 
 struct Line {
     Point2D start, end;
+    std::string_view GetName() const { return "Line"; }
 
     double Length(void) const { return start.DistanceTo(end); }
     Point2D Center(void) const { return {(end.x + start.x) / 2, (end.y + start.y) / 2}; }
@@ -93,6 +94,7 @@ struct Line {
 
 struct Triangle {
     Point2D a, b, c;
+    std::string_view GetName() const { return "Triangle"; }
 
     Point2D Center(void) { return {(a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3}; }
 
@@ -108,6 +110,7 @@ struct Triangle {
 struct Rectangle {
     Point2D bottom_left;
     double width, height;
+    std::string_view GetName() const { return "Rectangle"; }
 
     Point2D Center(void) { return {bottom_left.x + (width / 2), bottom_left.y + (height / 2)}; }
 
@@ -127,6 +130,8 @@ struct RegularPolygon {
     Point2D center_p;
     double radius;
     int sides;
+
+    std::string_view GetName() const { return "RegularPolygon"; }
 
     constexpr RegularPolygon(Point2D center, double radius, int sides)
         : center_p(center), radius(radius), sides(sides) {}
@@ -189,6 +194,7 @@ struct RegularPolygon {
 struct Circle {
     Point2D center_p;
     double radius;
+    std::string_view GetName() const { return "Circle"; }
 
     constexpr Circle(Point2D center, double radius) : center_p(center), radius(radius) {}
 
@@ -226,6 +232,7 @@ struct Circle {
 
 class Polygon {
 public:
+    std::string_view GetName() const { return "Polygon"; }
     /* ваш код здесь */
     Polygon(std::vector<Point2D> points) : points_(std::move(points)) {}
 
