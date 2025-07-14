@@ -7,6 +7,7 @@
 #include "visualization.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <print>
 #include <ranges>
 
@@ -153,7 +154,10 @@ int main() {
     std::vector<Point2D> points;
 
     /* ваш код здесь */
-
+    auto get_vertices = [](auto &shape) { return std::visit([](auto &elem) { return elem.Vertices(); }, shape); };
+    std::ranges::for_each(shapes, [&](auto &shape) {
+        points.insert(points.end(), get_vertices(shape).begin(), get_vertices(shape).end());
+    });
     //
     // Находим список точек, для построения выпуклой оболочки - convex hull - алгоритмом Грэхема
     // Создаём из них объект класса `Polygon` и добавляем его в список shapes
