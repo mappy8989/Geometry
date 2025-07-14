@@ -77,7 +77,7 @@ void PerformShapeAnalysis(DummyClass shapes) {
         }
     });
 
-    std::println("Max heigth is {}", geometry::utils::FindHighestShape(shapes));
+    std::println("Max heigth is {}", geometry::utils::FindHighestShape(shapes).value());
     auto distances = geometry::queries::GetDistancesBetweenShapes(shapes);
 
     std::println("Distances:");
@@ -99,6 +99,17 @@ void PerformShapeAnalysis(DummyClass shapes) {
 void PerformExtraShapeAnalysis(std::span<const Shape> shapes) {
     std::println("\n=== Shape Extra Analysis ===");
 
+    auto get_height = [](auto &elem) { return std::visit([](auto &shape) { return shape.Height(); }, elem); };
+    auto res = shapes | std::views::filter([&](auto &shape) { return get_height(shape) > 50.0; }) | std::views::take(3);
+    /*  std::ranges::for_each(shapes, [](auto &elem) {
+          std::visit(
+              [](auto &el) {
+                  using T = std::decay_t<decltype(el)>;
+                  std::println("{}", static_cast<const T>(el));  // Приводим к value/
+              },
+              elem);
+      });*/
+    (void)res;
     /*
      * Используйте ranges и созданные классы чтобы:
      *     - Вывести 3 любые фигуры, которые находятся выше 50.0
@@ -113,7 +124,11 @@ int main() {
     std::println("Generated {} random shapes", shapes.size());
 
     // Выведите индекс каждой фигуры и её высоту
-
+    int index = 0;
+    std::ranges::for_each(shapes, [&](auto &shape) {
+        auto height = std::visit([&](const auto &elem) { return elem.Height(); }, shape);
+        std::println("[{}] {}", index++, height);
+    });
     //
     // Вызываем разработанные функции
     //

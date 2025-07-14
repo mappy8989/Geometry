@@ -103,43 +103,43 @@ inline double DistanceToPoint(const Shape &shape, const Point2D &point) {
         return *res;
     };
 
-    auto res =
-        std::visit(Multilambda{[&](const Line &line) { return DistFromPointToLine(point, line); },
-                               [&](const Triangle &triangle) {
-                                   if (sign(point, triangle.a, triangle.b) == sign(point, triangle.b, triangle.c) &&
-                                       sign(point, triangle.b, triangle.c) == sign(point, triangle.c, triangle.a)) {
-                                       // point located inside triangle
-                                       return 0.0;
-                                   }
-                                   return GetMinDistanceForLines(triangle);
-                               },
-                               [&](const Rectangle &rect) {
-                                   if (point.x >= rect.bottom_left.x && point.x <= (rect.bottom_left.x + rect.width) &&
-                                       point.y >= rect.bottom_left.y && point.y <= (rect.bottom_left.y + rect.height)) {
-                                       // point located inside triangle
-                                       return 0.0;
-                                   }
-                                   return GetMinDistanceForLines(rect);
-                               },
-                               [&](const Circle &circle) {
-                                   double distance = circle.center_p.DistanceTo(point);
-                                   if (distance < circle.radius) {
-                                       return 0.0;
-                                   }
-                                   return distance;
-                               },
-                               [&](const RegularPolygon &regpoly) { return GetMinDistanceForLines(regpoly); },
-                               [&](const Polygon &poly) { return GetMinDistanceForLines(poly); },
+    auto res = std::visit(Multilambda{
+                              [&](const Line &line) { return DistFromPointToLine(point, line); },
+                              [&](const Triangle &triangle) {
+                                  if (sign(point, triangle.a, triangle.b) == sign(point, triangle.b, triangle.c) &&
+                                      sign(point, triangle.b, triangle.c) == sign(point, triangle.c, triangle.a)) {
+                                      // point located inside triangle
+                                      return 0.0;
+                                  }
+                                  return GetMinDistanceForLines(triangle);
+                              },
+                              [&](const Rectangle &rect) {
+                                  if (point.x >= rect.bottom_left.x && point.x <= (rect.bottom_left.x + rect.width) &&
+                                      point.y >= rect.bottom_left.y && point.y <= (rect.bottom_left.y + rect.height)) {
+                                      // point located inside triangle
+                                      return 0.0;
+                                  }
+                                  return GetMinDistanceForLines(rect);
+                              },
+                              [&](const Circle &circle) {
+                                  double distance = circle.center_p.DistanceTo(point);
+                                  if (distance < circle.radius) {
+                                      return 0.0;
+                                  }
+                                  return distance;
+                              },
+                              [&](const RegularPolygon &regpoly) { return GetMinDistanceForLines(regpoly); },
+                              [&](const Polygon &poly) { return GetMinDistanceForLines(poly); }  //,
 
-                               [](const auto &fig) {
+                              /* [](const auto &fig) {
                                    throw std::logic_error("Unsupported figure");
                                    return 0.0;
-                               }
+                               } */
 
-                   }  // namespace geometry::queries
+                          }  // namespace geometry::queries
 
-                   ,
-                   shape);
+                          ,
+                          shape);
     /* ваш код здесь */
     return res;
 }

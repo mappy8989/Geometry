@@ -319,27 +319,31 @@ struct std::formatter<std::vector<geometry::Point2D>> {
     constexpr auto parse(std::format_parse_context &ctx) {
         auto it = ctx.begin();
 
-        /* ваш код здесь */
+        if (it != ctx.end() && *it == 'n') {
+            std::string_view remaining{it, ctx.end()};
+            std::string_view spec{"new_line"};
 
+            if (remaining.starts_with(spec)) {
+                use_new_line = true;
+                return it + spec.length();
+            }
+        }
         return it;
     }
 
     template <typename FormatContext>
     auto format(const std::vector<geometry::Point2D> &v, FormatContext &ctx) {
         auto out = ctx.out();
-        out = std::format_to(out, "[");  // opening bracket
 
         bool first = true;
         for (const auto &elem : v) {
             if (!first) {
-                out = std::format_to(out, ", ");
+                out = std::format_to(out, use_new_line ? "\t" : " ");
             }
             first = false;
             // Format each element using its own formatter
             out = std::format_to(out, "{}", elem);
         }
-
-        out = std::format_to(out, "]");  // closing bracket
         return out;
     }
 };
@@ -410,3 +414,18 @@ struct std::formatter<geometry::Polygon> {
         return std::format_to(out, "]");
     }
 };
+
+namespace std {
+template <>
+struct formatter<const geometry::Line> : formatter<geometry::Line> {};
+template <>
+struct formatter<const geometry::Triangle> : formatter<geometry::Triangle> {};
+template <>
+struct formatter<const geometry::Rectangle> : formatter<geometry::Rectangle> {};
+template <>
+struct formatter<const geometry::RegularPolygon> : formatter<geometry::RegularPolygon> {};
+template <>
+struct formatter<const geometry::Circle> : formatter<geometry::Circle> {};
+template <>
+struct formatter<const geometry::Polygon> : formatter<geometry::Polygon> {};
+}  // namespace std
