@@ -19,7 +19,7 @@ namespace geometry::intersections {
  */
 class IntersectionVisitor {
 public:
-    auto GetIntersections(const Shape &figure1, const Shape &figure2) {
+    std::optional<std::vector<Point2D>> GetIntersections(const Shape &figure1, const Shape &figure2) {
         std::visit(
             geometry::queries::Multilambda{
                 [&](geometry::Line &line1, geometry::Line &line2) { return IsLinesIntersect(line1, line2); },
@@ -31,60 +31,73 @@ public:
                     // Fallback for unsupported types (should not be needed here, but good for
                     // extensibility)
                     throw std::logic_error("Unsupported intersection types");
-                    return false;
+                    return std::nullopt;
                 }},
             figure1, figure2);
 
-        return false;
+        return std::nullopt;
     }
 
 private:
-    bool IsLineAndCircleIntersect(geometry::Line &line, geometry::Circle &circle) {
-        double dx = line.end.x - line.start.x;
-        double dy = line.end.y - line.start.y;
-        double fx = circle.Center().x - line.start.x;
-        double fy = circle.Center().y - line.start.y;
-        double len_sq = dx * dx + dy * dy;
-        double t = (fx * dx + fy * dy) / len_sq;
+    std::optional<std::vector<Point2D>> IsLineAndCircleIntersect(geometry::Line &line, geometry::Circle &circle) {
+        Point2D d = line.end - line.start;
+        Point2D f = line.start - circle.Center();
 
-        // Ограничиваем t от 0 до 1, чтобы получить ближайшую точку на отрезке
-        t = std::max(0.0, std::min(1.0, t));
+        double a = d.Dot(d);
+        double b = 2 * f.Dot(d);
+        double c = f.Dot(f) - circle.radius * circle.radius;
 
-        double closest_x = line.start.x + t * dx;
-        double closest_y = line.start.y + t * dy;
+        double discriminant = b * b - 4 * a * c;
+        if (discriminant < 0)
+            return std::nullopt;  // нет пересечений
 
-        double dist_sq = (circle.Center().x - closest_x) * (circle.Center().x - closest_x) +
-                         (circle.Center().y - closest_y) * (circle.Center().y - closest_y);
-
-        return dist_sq <= circle.radius * circle.radius;
+        double sqrtD = std::sqrt(discriminant);
+        std::vector<Point2D> points;
+        for (int sign : {-1, 1}) {
+            double t = (-b + sign * sqrtD) / (2 * a);
+            if (0.0 <= t && t <= 1.0)
+                points.emplace_back(line.start + d * t);
+        }
+        if (!points.empty())
+            return points;
+        return std::nullopt;
     }
 
-    bool IsCirclesIntersect(geometry::Circle &circle1, geometry::Circle &circle2) {
-        double dx = circle1.Center().x - circle2.Center().x;
-        double dy = circle1.Center().y - circle2.Center().y;
-        double d = std::sqrt(dx * dx + dy * dy);
+    std::optional<std::vector<Point2D>> IsCirclesIntersect(geometry::Circle &c1, geometry::Circle &c2) {
+        Point2D d = c2.center_p - c1.center_p;
+        double dist = d.Length();
 
-        // circles are equal
-        if (d == 0 && circle1.radius == circle2.radius)
-            return true;
+        if (dist > c1.radius + c2.radius || dist < std::abs(c1.radius - c2.radius))
+            return std::nullopt;  // нет пересечений
 
-        // Нет пересечения: одна внутри другой или слишком далеко
-        if (d > circle1.radius + circle2.radius || d < std::abs(circle1.radius - circle2.radius))
-            return false;
+        double a = (c1.radius * c1.radius - c2.radius * c2.radius + dist * dist) / (2 * dist);
+        double h = std::sqrt(std::max(0.0, c1.radius * c1.radius - a * a));
+        Point2D P = c1.center_p + d * (a / dist);
 
-        // В остальных случаях — есть хотя бы одна общая точка
-        return true;
+        if (h < 1e-12)  // одно касание
+            return std::vector<Point2D>{P};
+        // две точки
+        double rx = -d.y * (h / dist);
+        double ry = d.x * (h / dist);
+        return std::vector<Point2D>{{P.x + rx, P.y + ry}, {P.x - rx, P.y - ry}};
     }
 
-    bool IsLinesIntersect(geometry::Line &line1, geometry::Line &line2) {
-        auto ccw = [](double x1, double y1, double x2, double y2, double x3, double y3) {
-            return (y3 - y1) * (x2 - x1) > (y2 - y1) * (x3 - x1);
-        };
+    std::optional<std::vector<Point2D>> IsLinesIntersect(geometry::Line &l1, geometry::Line &l2) {
+        double x1 = l1.start.x, y1 = l1.start.y, x2 = l1.end.x, y2 = l1.end.y;
+        double x3 = l2.start.x, y3 = l2.start.y, x4 = l2.end.x, y4 = l2.end.y;
 
-        return (ccw(line1.start.x, line1.start.y, line2.start.x, line2.start.y, line2.end.x, line2.end.y) !=
-                ccw(line1.end.x, line1.end.y, line2.start.x, line2.start.y, line2.end.x, line2.end.y)) &&
-               (ccw(line1.start.x, line1.start.y, line1.end.x, line1.end.y, line2.start.x, line2.start.y) !=
-                ccw(line1.start.x, line1.start.y, line1.end.x, line1.end.y, line2.end.x, line2.end.y));
+        double denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (std::abs(denom) < 1e-12)
+            return std::nullopt;  // Параллельно или совпадает
+
+        double px = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / denom;
+        double py = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denom;
+
+        // Проверяем, принадлежит ли точка обоим отрезкам
+        auto between = [](double a, double b, double c) { return (a <= b && b <= c) || (c <= b && b <= a); };
+        if (between(x1, px, x2) && between(y1, py, y2) && between(x3, px, x4) && between(y3, py, y4))
+            return std::vector<Point2D>{{px, py}};
+        return std::nullopt;
     }
 };
 

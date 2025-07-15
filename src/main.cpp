@@ -21,18 +21,18 @@ void PrintAllIntersections(const Shape &shape, DummyClass others) {
     if (std::holds_alternative<geometry::Line>(shape) || std::holds_alternative<geometry::Circle>(shape)) {
         return;
     }
-    geometry::intersections::IntersectionVisitor intersectVisitor;
 
     auto get_name = [](const Shape &shape) { return std::visit([](auto &elem) { return elem.GetName(); }, shape); };
     const std::string_view shape_name = get_name(shape);
 
     others.shapes_ | std::views::filter([](const auto &shape) {
         return std::holds_alternative<geometry::Line>(shape) || std::holds_alternative<geometry::Circle>(shape);
-    }) | std::views::transform([&](auto &&elem) {
-        bool is_intersect = intersectVisitor.GetIntersections(shape, elem);
+    }) | views::transform([&](auto &&elem) {
+        auto is_intersect = intersections::IntersectionVisitor{}.GetIntersections(shape, elem);
         if (std::holds_alternative<geometry::Line>(elem)) {
         }
-        std::println("{} {} {}", shape_name, get_name(elem), is_intersect ? " intersects" : " not intersect");
+        std::println("{} {} {}", shape_name, get_name(elem),
+                     is_intersect.has_value() ? " intersects" : " not intersect");
         return is_intersect;
     });
     /*
@@ -56,7 +56,7 @@ void PrintDistancesFromPointToShapes(Point2D p, DummyClass shapes) {
     auto get_name = [](const Shape &shape) { return std::visit([](auto &elem) { return elem.GetName(); }, shape); };
 
     auto first_shapes = shapes.shapes_ | std::views::take(5);
-    std::ranges::for_each(first_shapes, [&](auto &&elem) {
+    rng::for_each(first_shapes, [&](auto &&elem) {
         std::println("Distance from point P to the center of {} is {}", get_name(elem),
                      geometry::queries::PointToShapeDistanceVisitor{}(p, elem));
     });
@@ -72,7 +72,7 @@ void PerformShapeAnalysis(DummyClass shapes) {
     std::println("\n=== Shape Analysis ===");
     auto collisions = geometry::utils::FindAllCollisions(shapes);
 
-    std::ranges::for_each(collisions, [](auto &&box) {
+    rng::for_each(collisions, [](auto &&box) {
         if (box.has_value()) {
             std::println("{} {}", box.value().first, box.value().second);
         }
@@ -82,7 +82,7 @@ void PerformShapeAnalysis(DummyClass shapes) {
     auto distances = geometry::queries::GetDistancesBetweenShapes(shapes);
 
     std::println("Distances:");
-    std::ranges::for_each(distances, [](const auto &elem) {
+    rng::for_each(distances, [](const auto &elem) {
         if (elem.has_value()) {
             std::println("Distance = {}", *elem);
         } else {
@@ -101,15 +101,15 @@ void PerformExtraShapeAnalysis(std::span<const Shape> shapes) {
     std::println("\n=== Shape Extra Analysis ===");
 
     auto get_height = [](auto &elem) { return std::visit([](auto &shape) { return shape.Height(); }, elem); };
-    auto res = shapes | std::views::filter([&](auto &shape) { return get_height(shape) > 50.0; }) | std::views::take(3);
-    /*  std::ranges::for_each(shapes, [](auto &elem) {
-          std::visit(
-              [](auto &el) {
-                  using T = std::decay_t<decltype(el)>;
-                  std::println("{}", static_cast<const T>(el));  // Приводим к value/
-              },
-              elem);
-      });*/
+    auto res = shapes | views::filter([&](auto &shape) { return get_height(shape) > 50.0; }) | views::take(3);
+    /*rng::for_each(shapes, [&](auto &elem) {
+        std::visit(
+            [&](auto &el) {
+                using T = std::decay_t<decltype(el)>;
+                std::println("{}", static_cast<const T>(el));  // Приводим к value/
+            },
+            elem);
+    }); */
     (void)res;
     /*
      * Используйте ranges и созданные классы чтобы:
@@ -126,7 +126,7 @@ int main() {
 
     // Выведите индекс каждой фигуры и её высоту
     int index = 0;
-    std::ranges::for_each(shapes, [&](auto &shape) {
+    rng::for_each(shapes, [&](auto &shape) {
         auto height = std::visit([&](const auto &elem) { return elem.Height(); }, shape);
         std::println("[{}] {}", index++, height);
     });
@@ -155,7 +155,7 @@ int main() {
 
     /* ваш код здесь */
     auto get_vertices = [](auto &shape) { return std::visit([](auto &elem) { return elem.Vertices(); }, shape); };
-    std::ranges::for_each(shapes, [&](auto &shape) {
+    rng::for_each(shapes, [&](auto &shape) {
         points.insert(points.end(), get_vertices(shape).begin(), get_vertices(shape).end());
     });
     //
@@ -163,7 +163,11 @@ int main() {
     // Создаём из них объект класса `Polygon` и добавляем его в список shapes
     // Рисуем все фигуры
     //
-
+    auto graham_points = geometry::convex_hull::GrahamScan(points);
+    if (graham_points.has_value()) {
+        shapes.emplace_back(geometry::Polygon{graham_points.value()});
+        geometry::visualization::Draw(shapes);
+    }
     /* ваш код здесь */
 
     //
@@ -172,7 +176,10 @@ int main() {
 
     {
         std::vector<Point2D> points = {{0, 0}, {10, 0}, {5, 8}, {15, 5}, {2, 12}};
-
+        auto triangulation = geometry::triangulation::DelaunayTriangulation(points);
+        if (triangulation.has_value()) {
+            geometry::visualization::Draw(triangulation.value());
+        }
         //
         // Используйте список точек points или свой, чтобы
         // выполнить алгоритм триангуляции Делоне алгоритмом Боуэра-Ватсона

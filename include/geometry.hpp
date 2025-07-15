@@ -80,6 +80,7 @@ struct BoundingBox {
 struct Line {
     Point2D start, end;
     std::string_view GetName() const { return "Line"; }
+    std::vector<Point2D> Vertices() { return {start, end}; }
 
     double Length(void) const { return start.DistanceTo(end); }
     Point2D Center(void) const { return {(end.x + start.x) / 2, (end.y + start.y) / 2}; }
@@ -95,6 +96,7 @@ struct Line {
 struct Triangle {
     Point2D a, b, c;
     std::string_view GetName() const { return "Triangle"; }
+    std::vector<Point2D> Vertices() { return {a, b, c}; }
 
     Point2D Center(void) { return {(a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3}; }
 
@@ -111,6 +113,10 @@ struct Rectangle {
     Point2D bottom_left;
     double width, height;
     std::string_view GetName() const { return "Rectangle"; }
+    std::vector<Point2D> Vertices() {
+        return {bottom_left, Point2D{bottom_left.x + width, bottom_left.y},
+                Point2D{bottom_left.x, bottom_left.y + height}, Point2D{bottom_left.x + width, bottom_left.y + height}};
+    }
 
     Point2D Center(void) { return {bottom_left.x + (width / 2), bottom_left.y + (height / 2)}; }
 
