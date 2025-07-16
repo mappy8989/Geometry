@@ -16,7 +16,7 @@ using namespace geometry;
 namespace rng = std::ranges;
 namespace views = std::ranges::views;
 
-void PrintAllIntersections(const Shape &shape, DummyClass others) {
+void PrintAllIntersections(const Shape &shape, std::vector<Shape> others) {
     std::println("\n=== Intersections ===");
     if (std::holds_alternative<geometry::Line>(shape) || std::holds_alternative<geometry::Circle>(shape)) {
         return;
@@ -25,10 +25,10 @@ void PrintAllIntersections(const Shape &shape, DummyClass others) {
     auto get_name = [](const Shape &shape) { return std::visit([](auto &elem) { return elem.GetName(); }, shape); };
     const std::string_view shape_name = get_name(shape);
 
-    others.shapes_ | std::views::filter([](const auto &shape) {
+    others | std::views::filter([](const auto &shape) {
         return std::holds_alternative<geometry::Line>(shape) || std::holds_alternative<geometry::Circle>(shape);
     }) | views::transform([&](auto &&elem) {
-        auto is_intersect = intersections::IntersectionVisitor{}.GetIntersections(shape, elem);
+        auto is_intersect = intersections::GetIntersectPoint(shape, elem);
         if (std::holds_alternative<geometry::Line>(elem)) {
         }
         std::println("{} {} {}", shape_name, get_name(elem),
@@ -45,17 +45,17 @@ void PrintAllIntersections(const Shape &shape, DummyClass others) {
      */
 }
 
-void PrintDistancesFromPointToShapes(Point2D p, DummyClass shapes) {
+void PrintDistancesFromPointToShapes(Point2D p, std::vector<Shape> shapes) {
     std::println("\n=== Distance from Point Test ===");
     std::println("Testing point: {:} ", p);
 
-    if (shapes.shapes_.size() < 5) {
+    if (shapes.size() < 5) {
         return;
     }
 
     auto get_name = [](const Shape &shape) { return std::visit([](auto &elem) { return elem.GetName(); }, shape); };
 
-    auto first_shapes = shapes.shapes_ | std::views::take(5);
+    auto first_shapes = shapes | std::views::take(5);
     rng::for_each(first_shapes, [&](auto &&elem) {
         std::println("Distance from point P to the center of {} is {}", get_name(elem),
                      geometry::queries::PointToShapeDistanceVisitor{}(p, elem));
@@ -68,7 +68,7 @@ void PrintDistancesFromPointToShapes(Point2D p, DummyClass shapes) {
      */
 }
 
-void PerformShapeAnalysis(DummyClass shapes) {
+void PerformShapeAnalysis(std::vector<Shape> shapes) {
     std::println("\n=== Shape Analysis ===");
     auto collisions = geometry::utils::FindAllCollisions(shapes);
 

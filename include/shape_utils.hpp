@@ -68,10 +68,10 @@ private:
     std::uniform_int_distribution<int> type_dist;
 };
 
-inline std::vector<std::optional<std::pair<Point2D, Point2D>>> FindAllCollisions(DummyClass shapes) {
+inline std::vector<std::optional<std::pair<Point2D, Point2D>>> FindAllCollisions(std::vector<Shape> shapes) {
     std::vector<std::pair<int, Shape>> enum_shapes;
-    enum_shapes.reserve(shapes.shapes_.size());
-    std::ranges::transform(shapes.shapes_ | std::views::enumerate, std::back_inserter(enum_shapes), [](auto &&pair) {
+    enum_shapes.reserve(shapes.size());
+    std::ranges::transform(shapes | std::views::enumerate, std::back_inserter(enum_shapes), [](auto &&pair) {
         auto [idx, shape] = pair;
         return std::make_pair(idx, shape);
     });
@@ -88,7 +88,7 @@ inline std::vector<std::optional<std::pair<Point2D, Point2D>>> FindAllCollisions
            std::ranges::to<std::vector>();
 }
 
-inline std::optional<size_t> FindHighestShape(DummyClass shapes) {
+inline std::optional<size_t> FindHighestShape(std::vector<Shape> shapes) {
 
     /*
      * Используйте библиотеку ranges, чтобы найти самую высокую фигуру
@@ -97,8 +97,8 @@ inline std::optional<size_t> FindHighestShape(DummyClass shapes) {
      */
 
     auto get_height = [](const Shape &shape) { return std::visit([&](const auto &el) { return el.Height(); }, shape); };
-    auto res = std::ranges::max_element(shapes.shapes_, {}, get_height);
-    if (res == shapes.shapes_.end()) {
+    auto res = std::ranges::max_element(shapes, {}, get_height);
+    if (res == shapes.end()) {
         return std::nullopt;
     }
 

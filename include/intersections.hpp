@@ -101,6 +101,8 @@ private:
     }
 };
 
-inline std::optional<Point2D> GetIntersectPoint(const Shape &shape1, const Shape &shape2) { return std::nullopt; }
+inline std::optional<std::vector<Point2D>> GetIntersectPoint(const Shape &shape1, const Shape &shape2) {
+    return IntersectionVisitor{}.GetIntersections(shape1, shape2);
+}
 
 }  // namespace geometry::intersections

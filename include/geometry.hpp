@@ -29,16 +29,20 @@ struct Point2D {
     bool operator==(const Point2D &other) { return x == other.x && y == other.y; }
 
     // Binary math operators
-    Point2D operator+(const Point2D &other) const { return {x + other.x, y + other.y}; }
-    Point2D operator-(const Point2D &other) const { return {x - other.x, y - other.y}; }
-    Point2D operator*(double value) { return {x * value, y * value}; }
-    Point2D operator/(double value) { return {x / value, y / value}; }
+    [[nodiscard]] constexpr Point2D operator+(const Point2D &other) const noexcept {
+        return {x + other.x, y + other.y};
+    }
+    [[nodiscard]] constexpr Point2D operator-(const Point2D &other) const noexcept {
+        return {x - other.x, y - other.y};
+    }
+    [[nodiscard]] constexpr Point2D operator*(double value) const noexcept { return {x * value, y * value}; }
+    [[nodiscard]] constexpr Point2D operator/(double value) const noexcept { return {x / value, y / value}; }
 
     // Binary geometry operations
-    double Dot(const Point2D &other) { return x * other.x + y * other.y; }
-    double Cross(const Point2D &other) { return x * other.y - y * other.x; }
-    double Length() const { return std::sqrt(x * x + y * y); }
-    double DistanceTo(const Point2D &other) const { return (*this - other).Length(); }
+    [[nodiscard]] constexpr double Dot(const Point2D &other) const noexcept { return x * other.x + y * other.y; }
+    [[nodiscard]] constexpr double Cross(const Point2D &other) const noexcept { return x * other.y - y * other.x; }
+    [[nodiscard]] constexpr double Length() const noexcept { return std::sqrt(x * x + y * y); }
+    [[nodiscard]] constexpr double DistanceTo(const Point2D &other) const noexcept { return (*this - other).Length(); }
 
     Point2D Normalize() {
         const double len = Length();
@@ -104,8 +108,8 @@ struct Triangle {
     double Height() const { return std::max(a.y, std::max(b.y, c.y)); }
 
     BoundingBox BoundBox() const {
-        return {std::min(a.x, std::min(b.x, c.x)), std::min(a.y, std::min(b.y, c.y)), std::max(a.x, std::max(b.x, c.x)),
-                std::max(a.y, std::max(b.y, c.y))};
+        return {std::min({a.x, b.x, c.x}), std::min({a.y, b.y, c.y}), std::max({a.x, b.x, c.x}),
+                std::max({a.y, b.y, c.y})};
     }
 };
 
@@ -297,11 +301,6 @@ using Shape = std::variant<Line, Triangle, Rectangle, RegularPolygon, Circle, Po
 /*
  * В коде везде используется DummyClass. Ваша задача - выбрать наиболее подходящий тип для решения задачи
  */
-struct DummyClass {
-    DummyClass(std::vector<Shape> shapes) : shapes_(std::move(shapes)) {}
-    std::vector<Shape> shapes_;
-};
-
 enum class GeometryError { Unsupported, NoIntersection, InvalidInput, DegenrateCase, InsufficientPoints };
 
 template <typename T>

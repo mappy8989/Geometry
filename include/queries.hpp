@@ -43,33 +43,27 @@ inline double DistFromPointToLine(const Point2D &point, const Line &line) {
  * Для всех остальных требуется вернуть пустое значение
  */
 struct ShapeToShapeDistanceVisitor {
-    double operator()(const Shape &shape1, const Shape &shape2) {
-        return std::visit(
-            Multilambda{[](const auto &shape, const Point2D &point) { return DistanceToPoint(shape, point); },
-                        [](const Line &lin1, const Line &lin2) {
-                            double d1 = DistFromPointToLine(lin1.start, Line{lin2.start, lin2.end});
-                            double d2 = DistFromPointToLine(lin1.end, Line{lin2.start, lin2.end});
-                            double d3 = DistFromPointToLine(lin2.start, Line{lin1.start, lin1.end});
-                            double d4 = DistFromPointToLine(lin2.end, Line{lin1.start, lin1.end});
-                            return std::min({d1, d2, d3, d4});
-                        },
-                        [](const Circle &circ1, const Circle &circ2) {
-                            double dx = circ1.center_p.x - circ2.center_p.x;
-                            double dy = circ1.center_p.y - circ2.center_p.y;
-                            double d = std::hypot(dx, dy);
-                            double s = d - circ1.radius - circ2.radius;
-                            // Если одна окружность вложена в другую, расстояние отрицательно
-                            if (d < fabs(circ1.radius - circ2.radius)) {
-                                s = fabs(circ1.radius - circ2.radius) - d;
-                            }
-                            return s;
-                        },
-                        [](const auto &fig1, const auto &fig2) {
-                            throw std::logic_error("Unsupported figure");
-                            return 0.0;
-                        }},
-            shape1, shape2);
+
+    double operator()(const auto &shape, const Point2D &point) { return DistanceToPoint(shape, point); }
+    double operator()(const Line &lin1, const Line &lin2) {
+        double d1 = DistFromPointToLine(lin1.start, Line{lin2.start, lin2.end});
+        double d2 = DistFromPointToLine(lin1.end, Line{lin2.start, lin2.end});
+        double d3 = DistFromPointToLine(lin2.start, Line{lin1.start, lin1.end});
+        double d4 = DistFromPointToLine(lin2.end, Line{lin1.start, lin1.end});
+        return std::min({d1, d2, d3, d4});
     }
+    double operator()(const Circle &circ1, const Circle &circ2) {
+        double dx = circ1.center_p.x - circ2.center_p.x;
+        double dy = circ1.center_p.y - circ2.center_p.y;
+        double d = std::hypot(dx, dy);
+        double s = d - circ1.radius - circ2.radius;
+        // Если одна окружность вложена в другую, расстояние отрицательно
+        if (d < fabs(circ1.radius - circ2.radius)) {
+            s = fabs(circ1.radius - circ2.radius) - d;
+        }
+        return s;
+    }
+    double operator()(const auto &fig1, const auto &fig2) { throw std::logic_error("Unsupported figure"); }
     /* ваш код здесь */
 };
 /*
@@ -82,10 +76,10 @@ inline double DistanceToPoint(const Shape &shape, const Point2D &point) {
 
     auto createLines = [](const std::vector<Point2D> &points) -> std::vector<Line> {
         std::vector<Line> lines;
+        lines.reserve(points.size() - 1);
         for (size_t i = 0; i < points.size() - 1; ++i) {
-            lines.push_back(Line{points[i], points[i + 1]});
+            lines.emplace_back(Line{points[i], points[i + 1]});
         }
-        lines.push_back(Line{points[points.size() - 1], points[0]});
         return lines;
     };
 
@@ -103,43 +97,43 @@ inline double DistanceToPoint(const Shape &shape, const Point2D &point) {
         return *res;
     };
 
-    auto res = std::visit(Multilambda{
-                              [&](const Line &line) { return DistFromPointToLine(point, line); },
-                              [&](const Triangle &triangle) {
-                                  if (sign(point, triangle.a, triangle.b) == sign(point, triangle.b, triangle.c) &&
-                                      sign(point, triangle.b, triangle.c) == sign(point, triangle.c, triangle.a)) {
-                                      // point located inside triangle
-                                      return 0.0;
-                                  }
-                                  return GetMinDistanceForLines(triangle);
-                              },
-                              [&](const Rectangle &rect) {
-                                  if (point.x >= rect.bottom_left.x && point.x <= (rect.bottom_left.x + rect.width) &&
-                                      point.y >= rect.bottom_left.y && point.y <= (rect.bottom_left.y + rect.height)) {
-                                      // point located inside triangle
-                                      return 0.0;
-                                  }
-                                  return GetMinDistanceForLines(rect);
-                              },
-                              [&](const Circle &circle) {
-                                  double distance = circle.center_p.DistanceTo(point);
-                                  if (distance < circle.radius) {
-                                      return 0.0;
-                                  }
-                                  return distance;
-                              },
-                              [&](const RegularPolygon &regpoly) { return GetMinDistanceForLines(regpoly); },
-                              [&](const Polygon &poly) { return GetMinDistanceForLines(poly); }  //,
+    auto res =
+        std::visit(Multilambda{[&](const Line &line) { return DistFromPointToLine(point, line); },
+                               [&](const Triangle &triangle) {
+                                   if (sign(point, triangle.a, triangle.b) == sign(point, triangle.b, triangle.c) &&
+                                       sign(point, triangle.b, triangle.c) == sign(point, triangle.c, triangle.a)) {
+                                       // point located inside triangle
+                                       return 0.0;
+                                   }
+                                   return GetMinDistanceForLines(triangle);
+                               },
+                               [&](const Rectangle &rect) {
+                                   if (point.x >= rect.bottom_left.x && point.x <= (rect.bottom_left.x + rect.width) &&
+                                       point.y >= rect.bottom_left.y && point.y <= (rect.bottom_left.y + rect.height)) {
+                                       // point located inside triangle
+                                       return 0.0;
+                                   }
+                                   return GetMinDistanceForLines(rect);
+                               },
+                               [&](const Circle &circle) {
+                                   double distance = circle.center_p.DistanceTo(point);
+                                   if (distance < circle.radius) {
+                                       return 0.0;
+                                   }
+                                   return distance;
+                               },
+                               [&](const RegularPolygon &regpoly) { return GetMinDistanceForLines(regpoly); },
+                               [&](const Polygon &poly) { return GetMinDistanceForLines(poly); },
 
-                              /* [](const auto &fig) {
+                               [](const auto &fig) {
                                    throw std::logic_error("Unsupported figure");
                                    return 0.0;
-                               } */
+                               }
 
-                          }  // namespace geometry::queries
+                   }  // namespace geometry::queries
 
-                          ,
-                          shape);
+                   ,
+                   shape);
     /* ваш код здесь */
     return res;
 }
@@ -181,21 +175,18 @@ inline std::optional<std::pair<Point2D, Point2D>> BoundingBoxesOverlap(const Sha
     return std::nullopt;
 }
 
-std::optional<double> DistanceBetweenShapes(const Shape &shape1, const Shape &shape2) {
-    double distance = 0.0;
+inline std::optional<double> DistanceBetweenShapes(const Shape &shape1, const Shape &shape2) {
     try {
-        distance = ShapeToShapeDistanceVisitor{}(shape1, shape2);
+        return std::visit(ShapeToShapeDistanceVisitor(), shape1, shape2);
     } catch (...) {
         return std::nullopt;
     }
-
-    return distance;
 }
 
-std::vector<std::optional<double>> GetDistancesBetweenShapes(DummyClass shapes) {
+std::vector<std::optional<double>> GetDistancesBetweenShapes(std::vector<Shape> shapes) {
     std::vector<std::pair<int, Shape>> enum_shapes;
-    enum_shapes.reserve(shapes.shapes_.size());
-    std::ranges::transform(shapes.shapes_ | std::views::enumerate, std::back_inserter(enum_shapes), [](auto &&pair) {
+    enum_shapes.reserve(shapes.size());
+    std::ranges::transform(shapes | std::views::enumerate, std::back_inserter(enum_shapes), [](auto &&pair) {
         auto [idx, shape] = pair;
         return std::make_pair(idx, shape);
     });
