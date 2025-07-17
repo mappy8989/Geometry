@@ -184,21 +184,15 @@ inline std::optional<double> DistanceBetweenShapes(const Shape &shape1, const Sh
 }
 
 std::vector<std::optional<double>> GetDistancesBetweenShapes(std::vector<Shape> shapes) {
-    std::vector<std::pair<int, Shape>> enum_shapes;
-    enum_shapes.reserve(shapes.size());
-    std::ranges::transform(shapes | std::views::enumerate, std::back_inserter(enum_shapes), [](auto &&pair) {
-        auto [idx, shape] = pair;
-        return std::make_pair(idx, shape);
-    });
+    auto enums = shapes | std::views::enumerate;
 
-    return std::ranges::views::cartesian_product(enum_shapes, enum_shapes) |
-           std::ranges::views::filter([](auto &&pair) {
-               auto &[x, y] = pair;
-               return x.first < y.first;
+    return std::views::cartesian_product(enums, enums) | std::ranges::views::filter([](auto &&pair) {
+               auto &[a, b] = pair;
+               return std::get<0>(a) < std::get<0>(b);
            }) |
            std::views::transform([](auto &&tuple) {
                auto &[shape1, shape2] = tuple;
-               return geometry::queries::DistanceBetweenShapes(shape1.second, shape2.second);
+               return geometry::queries::DistanceBetweenShapes(std::get<1>(shape1), std::get<1>(shape2));
            }) |
            std::ranges::to<std::vector>();
 }

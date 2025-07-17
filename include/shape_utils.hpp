@@ -5,8 +5,6 @@
 #include <iterator>
 #include <print>
 #include <random>
-#include <range/v3/view/cartesian_product.hpp>
-#include <range/v3/view/filter.hpp>
 #include <ranges>
 #include <utility>
 #include <variant>
@@ -69,21 +67,15 @@ private:
 };
 
 inline std::vector<std::optional<std::pair<Point2D, Point2D>>> FindAllCollisions(std::vector<Shape> shapes) {
-    std::vector<std::pair<int, Shape>> enum_shapes;
-    enum_shapes.reserve(shapes.size());
-    std::ranges::transform(shapes | std::views::enumerate, std::back_inserter(enum_shapes), [](auto &&pair) {
-        auto [idx, shape] = pair;
-        return std::make_pair(idx, shape);
-    });
+    auto enums = shapes | std::views::enumerate;
 
-    return std::ranges::views::cartesian_product(enum_shapes, enum_shapes) |
-           std::ranges::views::filter([](auto &&pair) {
-               auto &[x, y] = pair;
-               return x.first < y.first;
+    return std::views::cartesian_product(enums, enums) | std::ranges::views::filter([](auto &&pair) {
+               auto &[a, b] = pair;
+               return std::get<0>(a) < std::get<0>(b);
            }) |
            std::views::transform([](auto &&tuple) {
                auto &[shape1, shape2] = tuple;
-               return geometry::queries::BoundingBoxesOverlap(shape1.second, shape2.second);
+               return geometry::queries::BoundingBoxesOverlap(std::get<1>(shape1), std::get<1>(shape2));
            }) |
            std::ranges::to<std::vector>();
 }
@@ -96,13 +88,12 @@ inline std::optional<size_t> FindHighestShape(std::vector<Shape> shapes) {
      * Важно: использование ручной итерации по фигурам не разрешается
      */
 
-    auto get_height = [](const Shape &shape) { return std::visit([&](const auto &el) { return el.Height(); }, shape); };
-    auto res = std::ranges::max_element(shapes, {}, get_height);
-    if (res == shapes.end()) {
+    auto max_height_elem = std::ranges::max_element(shapes, {}, geometry::queries::GetHeight);
+    if (max_height_elem == shapes.end()) {
         return std::nullopt;
     }
 
-    return get_height(*res);
+    return geometry::queries::GetHeight(*max_height_elem);
 }
 
 }  // namespace geometry::utils
