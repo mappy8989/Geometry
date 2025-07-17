@@ -104,7 +104,7 @@ struct Triangle {
 
     Point2D Center(void) { return {(a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3}; }
 
-    Lines2D<3> Lines() const { return {{a.x, b.x, c.x}, {a.y, b.y, c.y}}; }
+    Lines2D<4> Lines() const { return {{a.x, b.x, c.x, a.x}, {a.y, b.y, c.y, a.y}}; }
     double Height() const { return std::max(a.y, std::max(b.y, c.y)); }
 
     BoundingBox BoundBox() const {

@@ -109,18 +109,12 @@ inline GeometryResult<std::vector<DelaunayTriangle>> DelaunayTriangulation(std::
     }
 
     // Находим ограничивающий прямоугольник для всех точек
-    double minX = points[0].x, minY = points[0].y;
-    double maxX = points[0].x, maxY = points[0].y;
-    for (const auto &p : points) {
-        if (p.x < minX)
-            minX = p.x;
-        if (p.y < minY)
-            minY = p.y;
-        if (p.x > maxX)
-            maxX = p.x;
-        if (p.y > maxY)
-            maxY = p.y;
-    }
+    auto [min_x_it, max_x_it] =
+        std::minmax(points.begin(), points.end(), [](const auto &p1, const auto &p2) { return p1->x < p2->x; });
+    auto [min_y_it, max_y_it] =
+        std::minmax(points.begin(), points.end(), [](const auto &p1, const auto &p2) { return p1->y < p2->y; });
+    double minX = min_x_it->x, minY = min_y_it->y;
+    double maxX = max_x_it->x, maxY = max_y_it->y;
 
     double dx = maxX - minX;
     double dy = maxY - minY;
@@ -139,7 +133,7 @@ inline GeometryResult<std::vector<DelaunayTriangle>> DelaunayTriangulation(std::
     // Основной цикл по всем точкам
     for (const auto &point : points) {
         std::vector<DelaunayTriangle> badTriangles;
-        std::vector<Edge> polygon;
+        std::set<Edge> polygon;
 
         // Находим все треугольники, в окружность которых попадает новая точка
         for (const auto &triangle : triangulation) {
@@ -148,29 +142,17 @@ inline GeometryResult<std::vector<DelaunayTriangle>> DelaunayTriangulation(std::
             }
         }
 
-        // Формируем границу дырки (polygonal hole)
+        // Формируем границу дырки: если ребро встречено впервые — вставляем,
+        // если второй раз — удаляем из polygon
         for (const auto &triangle : badTriangles) {
-            std::vector<Point2D> verts = triangle.vertices();
-            for (int i = 0; i < 3; ++i) {
-                Edge edge(verts[i], verts[(i + 1) % 3]);
-                bool isShared = false;
-                for (const auto &otherTriangle : badTriangles) {
-                    if (&triangle == &otherTriangle)
-                        continue;
-                    std::vector<Point2D> otherVerts = otherTriangle.vertices();
-                    for (int j = 0; j < 3; ++j) {
-                        Edge otherEdge(otherVerts[j], otherVerts[(j + 1) % 3]);
-                        if (edge == otherEdge) {
-                            isShared = true;
-                            break;
-                        }
-                    }
-                    if (isShared)
-                        break;
-                }
-                if (!isShared) {
-                    polygon.push_back(edge);
-                }
+            Edge e1{triangle.a, triangle.b};
+            Edge e2{triangle.b, triangle.c};
+            Edge e3{triangle.c, triangle.a};
+            for (const auto &e : {e1, e2, e3}) {
+                if (auto it = polygon.find(e); it != polygon.end())
+                    polygon.erase(it);
+                else
+                    polygon.insert(e);
             }
         }
 
