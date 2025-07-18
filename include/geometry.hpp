@@ -124,9 +124,9 @@ struct Rectangle {
 
     Point2D Center(void) { return {bottom_left.x + (width / 2), bottom_left.y + (height / 2)}; }
 
-    Lines2D<4> Lines() const {
-        return {{bottom_left.x, bottom_left.x, bottom_left.x + width, bottom_left.x + width},
-                {bottom_left.y, bottom_left.y + height, bottom_left.y + height, bottom_left.y}};
+    Lines2D<5> Lines() const {
+        return {{bottom_left.x, bottom_left.x, bottom_left.x + width, bottom_left.x + width, bottom_left.x},
+                {bottom_left.y, bottom_left.y + height, bottom_left.y + height, bottom_left.y, bottom_left.y}};
     }
 
     double Height() const { return (bottom_left.y + height); }
@@ -163,7 +163,7 @@ struct RegularPolygon {
         Lines2DDyn lines;
         lines.Reserve(sides);
 
-        for (int i = 0; i < sides; i++) {
+        for (int i = 0; i <= sides; i++) {
             const double angle = 2 * std::numbers::pi * i / sides;
             lines.PushBack(center_p.x + radius * std::cos(angle), center_p.y + radius * std::sin(angle));
         }
@@ -229,12 +229,13 @@ struct Circle {
     }
     Lines2DDyn Lines(size_t N = 100) const {
         Lines2DDyn lines;
-        lines.Reserve(N);
+        lines.Reserve(N + 1);
 
         for (int i = 0; i < (int)N; i++) {
             const double angle = 2 * std::numbers::pi * i / N;
             lines.PushBack(center_p.x + radius * std::cos(angle), center_p.y + radius * std::sin(angle));
         }
+        lines.PushBack(center_p.x + radius * std::cos(0), center_p.y + radius * std::sin(0));
 
         return lines;
     }
@@ -263,6 +264,7 @@ public:
         for (const auto &point : points_) {
             lines.PushBack(point);
         }
+        lines.PushBack(points_.at(0));
         return lines;
     }
 

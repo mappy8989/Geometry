@@ -86,7 +86,8 @@ void PerformShapeAnalysis(std::vector<Shape> shapes) {
         if (elem.has_value()) {
             std::println("Distance = {}", *elem);
         } else {
-            std::println("Unsupported figures");
+            // is there any sense to print it?
+            // std::println("Unsupported figures");
         }
     });
     /*
@@ -102,6 +103,7 @@ void PerformExtraShapeAnalysis(std::span<const Shape> shapes) {
 
     auto get_height = [](auto &elem) { return std::visit([](auto &shape) { return shape.Height(); }, elem); };
     auto res = shapes | views::filter([&](auto &shape) { return get_height(shape) > 50.0; }) | views::take(3);
+    // DOESN'T compile for some reason =(
     /*rng::for_each(shapes, [&](auto &elem) {
         std::visit(
             [&](auto &el) {
@@ -111,6 +113,11 @@ void PerformExtraShapeAnalysis(std::span<const Shape> shapes) {
             elem);
     }); */
     (void)res;
+    auto compare = [&](const Shape &a, const Shape &b) { return get_height(a) < get_height(b); };
+
+    auto min_h = std::min_element(shapes.begin(), shapes.end(), compare);
+    auto max_h = std::max_element(shapes.begin(), shapes.end(), compare);
+    std::println("Min height = {}, max height = {}", get_height(*min_h), get_height(*max_h));
     /*
      * Используйте ranges и созданные классы чтобы:
      *     - Вывести 3 любые фигуры, которые находятся выше 50.0
@@ -156,7 +163,8 @@ int main() {
     /* ваш код здесь */
     auto get_vertices = [](auto &shape) { return std::visit([](auto &elem) { return elem.Vertices(); }, shape); };
     rng::for_each(shapes, [&](auto &shape) {
-        points.insert(points.end(), get_vertices(shape).begin(), get_vertices(shape).end());
+        auto vertices = get_vertices(shape);
+        points.insert(points.end(), vertices.begin(), vertices.end());
     });
     //
     // Находим список точек, для построения выпуклой оболочки - convex hull - алгоритмом Грэхема
