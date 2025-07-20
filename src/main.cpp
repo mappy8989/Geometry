@@ -104,14 +104,13 @@ void PerformExtraShapeAnalysis(std::span<const Shape> shapes) {
     auto get_height = [](auto &elem) { return std::visit([](auto &shape) { return shape.Height(); }, elem); };
     auto res = shapes | views::filter([&](auto &shape) { return get_height(shape) > 50.0; }) | views::take(3);
     // DOESN'T compile for some reason =(
-    /*rng::for_each(shapes, [&](auto &elem) {
+    rng::for_each(shapes, [&](const auto &elem) {
         std::visit(
-            [&](auto &el) {
-                using T = std::decay_t<decltype(el)>;
-                std::println("{}", static_cast<const T>(el));  // Приводим к value/
+            [&](const auto &el) {
+                std::println("{}", el);  // Приводим к value/
             },
             elem);
-    }); */
+    });
     (void)res;
     auto compare = [&](const Shape &a, const Shape &b) { return get_height(a) < get_height(b); };
 
