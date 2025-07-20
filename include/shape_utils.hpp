@@ -1,10 +1,13 @@
 #pragma once
 #include "geometry.hpp"
 #include "queries.hpp"
+#include <algorithm>
+#include <iterator>
 #include <print>
 #include <random>
 #include <ranges>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace geometry::utils {
@@ -63,21 +66,21 @@ private:
     std::uniform_int_distribution<int> type_dist;
 };
 
-std::vector<std::pair<Shape, Shape>> FindAllCollisions(DummyClass shapes) {
-    std::vector<std::pair<Shape, Shape>> collisions;
+inline std::vector<std::optional<std::pair<Point2D, Point2D>>> FindAllCollisions(std::vector<Shape> shapes) {
+    auto enums = shapes | std::views::enumerate;
 
-    /*
-     * Используйте библиотеку ranges, чтобы найти все коллизии между фигурами
-     *
-     * Важно: использование ручной итерации по фигурам не разрешается
-     *
-     * Также используйте наиболее эффективный метод добавления объектов в collisions
-     */
-
-    return collisions;
+    return std::views::cartesian_product(enums, enums) | std::ranges::views::filter([](auto &&pair) {
+               auto &[a, b] = pair;
+               return std::get<0>(a) < std::get<0>(b);
+           }) |
+           std::views::transform([](auto &&tuple) {
+               auto &[shape1, shape2] = tuple;
+               return geometry::queries::BoundingBoxesOverlap(std::get<1>(shape1), std::get<1>(shape2));
+           }) |
+           std::ranges::to<std::vector>();
 }
 
-std::optional<size_t> FindHighestShape(DummyClass shapes) {
+inline std::optional<size_t> FindHighestShape(std::vector<Shape> shapes) {
 
     /*
      * Используйте библиотеку ranges, чтобы найти самую высокую фигуру
@@ -85,7 +88,12 @@ std::optional<size_t> FindHighestShape(DummyClass shapes) {
      * Важно: использование ручной итерации по фигурам не разрешается
      */
 
-    return std::nullopt;
+    auto max_height_elem = std::ranges::max_element(shapes, {}, geometry::queries::GetHeight);
+    if (max_height_elem == shapes.end()) {
+        return std::nullopt;
+    }
+
+    return geometry::queries::GetHeight(*max_height_elem);
 }
 
 }  // namespace geometry::utils
